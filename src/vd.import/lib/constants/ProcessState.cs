@@ -7,4 +7,9 @@ namespace vd.import.lib.constants
         Import,
         Clean
     }
+
+    public static class ConstDataSets
+    {
+        
+    }
 }

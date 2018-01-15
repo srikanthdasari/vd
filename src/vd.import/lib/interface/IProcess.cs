@@ -3,7 +3,7 @@ using vd.import.lib.constants;
 
 namespace vd.import.lib.Interface
 {
-    public interface IProcessable
+    public interface IProcess
     {
          void Process();
     }
