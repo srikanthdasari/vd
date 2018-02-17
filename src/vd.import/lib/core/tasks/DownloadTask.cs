@@ -9,11 +9,18 @@ using System.Reactive.Linq;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using vd.core;
+using Microsoft.Extensions.Logging;
 
 namespace vd.import.lib.core.tasks
 {
     public class DownloadTask:ITask
     {
+        private readonly ILogger<DownloadTask> _logger;
+
+        public DownloadTask(ILogger<DownloadTask> logger)
+        {
+            _logger=logger;
+        }
 
         public void TaskImplementation()
         {

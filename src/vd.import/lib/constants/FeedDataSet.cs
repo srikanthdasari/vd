@@ -6,6 +6,6 @@ namespace vd.import.lib.constants
         NUM,
         TAG,
         PRE,
-
+        INIT
     }
 }

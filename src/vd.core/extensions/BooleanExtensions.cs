@@ -46,5 +46,17 @@ namespace vd.core.extensions
 
             return default(T);
         }
+
+        public static bool FromNumericToBool(this string val)
+        {
+            if(val.IsEmpty()) throw new ArgumentNullException();
+            if(val=="1")
+                return true;
+
+            if(val=="0")
+                return false;
+
+            return Convert.ToBoolean(val);
+        }
     }
 }

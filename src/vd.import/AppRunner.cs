@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NLog.Extensions.Logging;
+using vd.core;
 using vd.database;
+using vd.database.Entity;
 using vd.import.lib.constants;
 using vd.import.lib.core;
-using vd.import.lib.core.dbsubtasks;
 using vd.import.lib.core.tasks;
 using vd.import.lib.Interface;
 
@@ -19,17 +22,24 @@ namespace vd.import
         {
             ConfigureServices(serviceCollection);
             Services = serviceCollection.BuildServiceProvider();
-            Logger = Services.GetRequiredService<ILoggerFactory>().CreateLogger<AppRunner>();            
+
+            //Logger = Services.GetRequiredService<ILoggerFactory>().CreateLogger<AppRunner>();       
+            var loggerFactory = Services.GetRequiredService<ILoggerFactory>();
+
+            //configure NLog
+            loggerFactory.AddNLog(new NLogProviderOptions { CaptureMessageTemplates = true, CaptureMessageProperties =true });
+            loggerFactory.ConfigureNLog(StaticUtilities.GetDataPath()+"/nlog.config"); 
         }
 
         #endregion
 
         public IServiceProvider Services { get; set; }
-        public ILogger Logger { get; set; }
+        //public ILogger Logger { get; set; }
 
 
         #region Properties      
 
+        ITask InitTask { get; set; }
         ITask CleanTask { get; set; }
         ITask DownloadTask { get; set; }
         ITask ImportDataTask { get; set; }
@@ -44,27 +54,32 @@ namespace vd.import
         private void ConfigureServices(IServiceCollection serviceCollection)
         {
              serviceCollection.AddScoped<IProcess,Processable>()
-                              .AddSingleton<VDContext>()
+                              .AddSingleton<ILoggerFactory,LoggerFactory>()
+                              .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
+                              .AddLogging((builder)=>builder.SetMinimumLevel(LogLevel.Trace))
+                              .AddSingleton<TaskStrategy>()
+                              .AddScoped(typeof(IRepository<>),typeof(Repository<>))
+                              .AddScoped<IRepository<BaseEntity>,Repository<BaseEntity>>()
+                              .AddScoped<IRepository<num>,Repository<num>>()
+                              .AddScoped<IRepository<submission>,Repository<submission>>()
+                              .AddScoped<IRepository<pre>,Repository<pre>>()
+                              .AddScoped<IRepository<tag>,Repository<tag>>()
+                              .AddScoped<ITask,InitTask>()
                               .AddScoped<ITask,CleanTask>()
                               .AddScoped<ITask,DownloadTask>()
                               .AddScoped<ITask,UnzipTask>()
                               .AddScoped<ITask,ImportDataTask>()
+                              .AddSingleton<InitTask>()
                               .AddSingleton<CleanTask>()
                               .AddSingleton<DownloadTask>()
                               .AddSingleton<ImportDataTask>()
-                              .AddSingleton<UnzipTask>()
-                              .AddScoped<NumImportSubTask>()
-                              .AddScoped<PreImportSubTask>()
-                              .AddScoped<SubImportSubTask>()
-                              .AddScoped<TagImportSubtask>()
-                              .AddSingleton(new LoggerFactory().AddConsole())
-                              .AddSingleton<TaskStrategy>()
-                              //.AddSingleton<ITaskFactory,TaskFactory>()
+                              .AddSingleton<UnzipTask>()               
                               .AddSingleton(f=>{
                                     Func<ProcessState,ITask> accessor = key=>
                                     {
                                         switch(key)
                                         {
+                                            case ProcessState.Init: return f.GetService<InitTask>();
                                             case ProcessState.Clean: return f.GetService<CleanTask>();
                                             case ProcessState.Download :return f.GetService<DownloadTask>();
                                             case ProcessState.Import: return f.GetService<ImportDataTask>();
@@ -74,6 +89,7 @@ namespace vd.import
                                     };      
                                     return accessor;                           
                               })
+                           
                               .AddLogging();
                               
 
@@ -83,13 +99,17 @@ namespace vd.import
         {
             //TaskQueue=Services.GetService<Queue<IProcess>>();
             TaskQueue=new Queue<IProcess>();
+            //CurrentSessionParams.Context=Services.GetService<VDContext>();
             TaskStrategy=Services.GetService<TaskStrategy>();    
             var serviceAccessor=Services.GetService<Func<ProcessState,ITask>>();
+
+            InitTask=serviceAccessor(ProcessState.Init);
             CleanTask=serviceAccessor(ProcessState.Clean);
             DownloadTask=serviceAccessor(ProcessState.Download);
             UnzipTask=serviceAccessor(ProcessState.Unzip);
             ImportDataTask=serviceAccessor(ProcessState.Import);
             
+            TaskQueue.Enqueue(new Processable(()=>TaskStrategy.ChangeStrategy(InitTask).PerformTask()));
             TaskQueue.Enqueue(new Processable(()=>TaskStrategy.ChangeStrategy(CleanTask).PerformTask()));
             TaskQueue.Enqueue(new Processable(()=>TaskStrategy.ChangeStrategy(DownloadTask).PerformTask()));
             TaskQueue.Enqueue(new Processable(()=>TaskStrategy.ChangeStrategy(UnzipTask).PerformTask()));

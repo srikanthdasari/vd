@@ -10,12 +10,14 @@ using vd.import.lib.constants;
 using vd.core.extensions;
 using System.Threading.Tasks;
 using vd.import.lib.core.tasks;
-using vd.import.lib.core.dbsubtasks;
+using System.Threading;
 
 namespace vd.import
 {
     public class Program
     {
+        private static ManualResetEvent resetEvent = new ManualResetEvent(false);
+
         static void Main(string[] args)
         {
             //SetupContiner();
@@ -26,6 +28,9 @@ namespace vd.import
 
             IAppRunner runner=new AppRunner(new ServiceCollection());
             runner.Run();
+
+
+            while(true);
         }
         
     }

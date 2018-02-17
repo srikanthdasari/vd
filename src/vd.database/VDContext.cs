@@ -11,15 +11,17 @@ namespace vd.database
          public virtual DbSet<submission> submissions { get; set; }
          public virtual DbSet<tag> tags { get; set; }
 
+        public VDContext(DbContextOptions options):base(options)
+        {
+            Database.SetCommandTimeout(10000);
+        }
 
         //find the better way to handle this properly..
-         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-                                 =>optionsBuilder.UseMySql(@"server=localhost;port=3306;user=root;password=P@$$w0rd123;database=valuedashboard;persistsecurityinfo=True");
+         //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+         //                        =>optionsBuilder.UseMySql(@"server=localhost;port=3306;user=root;password=P@$$w0rd123;database=valuedashboard;persistsecurityinfo=True");
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<num>().HasKey(x=>new{ x.adsh,  x.tag,x.version,x.coreg, x.ddate, x.qtrs, x.uom} );
-
             modelBuilder.Entity<num>()
                 .Property(e => e.adsh)
                 .IsUnicode(false);
@@ -44,7 +46,7 @@ namespace vd.database
                 .Property(e => e.footnote)
                 .IsUnicode(false);
 
-            modelBuilder.Entity<num>().HasKey(x=>new{ x.adsh,  x.tag,x.version,x.coreg, x.ddate, x.qtrs, x.uom} );
+            modelBuilder.Entity<num>().HasIndex(x=>new{ x.adsh,  x.tag,x.version,x.coreg, x.ddate, x.qtrs, x.uom} ).IsUnique();            
 
             modelBuilder.Entity<pre>()
                 .Property(e => e.adsh)
@@ -70,7 +72,11 @@ namespace vd.database
                 .Property(e => e.plabel)
                 .IsUnicode(false);
 
-            modelBuilder.Entity<pre>().HasKey(x=>new{x.adsh, x.report, x.line });
+            modelBuilder.Entity<pre>()
+                .Property(e => e.negating)
+                .IsUnicode(false);
+
+            modelBuilder.Entity<pre>().HasIndex(x=>new{x.adsh, x.report, x.line }).IsUnique();
 
             modelBuilder.Entity<submission>()
                 .Property(e => e.adsh)
@@ -176,6 +182,8 @@ namespace vd.database
                 .Property(e => e.aciks)
                 .IsUnicode(false);
 
+            modelBuilder.Entity<submission>().HasIndex(x=>new{x.adsh}).IsUnique();
+
             modelBuilder.Entity<tag>()
                 .Property(e => e.tag1)
                 .IsUnicode(false);
@@ -204,7 +212,7 @@ namespace vd.database
                 .Property(e => e.doc)
                 .IsUnicode(false);
 
-            modelBuilder.Entity<tag>().HasKey(x=>new{x.tag1,x.version});
+            modelBuilder.Entity<tag>().HasIndex(x=>new{x.tag1,x.version}).IsUnique();
         }
         
     }

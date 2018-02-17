@@ -1,5 +1,6 @@
 
 using System.Collections.Generic;
+using vd.database;
 
 namespace vd.import.lib.constants
 {
@@ -9,11 +10,11 @@ namespace vd.import.lib.constants
 
         public static string LocalDirName ="Data";
 
-        //public static string[] FilesToExtract={ "num.txt", "pre.txt","tag.txt","sub.txt"};
-        //public static string[] FilesToExtract={ "tag.txt","sub.txt"};
         public static IDictionary<FeedDataSet,string> FilesToExtract =new Dictionary<FeedDataSet, string>{
 
             {FeedDataSet.NUM,"num.txt"}, {FeedDataSet.PRE,"pre.txt"},{FeedDataSet.TAG,"tag.txt"},{FeedDataSet.SUB,"sub.txt"}
         };
+
+        public static VDContext Context {get;set;}
     }
 }
